@@ -82,19 +82,26 @@ def text_to_speech(text, speed=1.0):
 def process_audio_files(bgm_path, tts_path):
     """배경음악과 TTS 음성을 결합하는 함수"""
     try:
-        # 오디오 파일 불러오기 (bgm은 mp3, tts는 wav)
-        bgm = AudioSegment.from_mp3(bgm_path)  # MP3로 수정
+        # 오디오 파일 불러오기
+        bgm = AudioSegment.from_mp3(bgm_path)
         tts = AudioSegment.from_wav(tts_path)
         
-        # 배경음악을 5초로 자르고 페이드아웃 적용
-        bgm = bgm[:5000]  # 5초
-        bgm = bgm.fade_out(duration=2000)  # 2초 동안 페이드아웃
+        # 시작 5초 동안의 배경음악 (원본 볼륨)
+        initial_bgm = bgm[:5000]
         
-        # 5초 배경음악 이후에 TTS 시작하도록 설정
-        silence_after_bgm = AudioSegment.silent(duration=500)  # 0.5초 간격
+        # TTS 길이 + 5초 만큼의 배경음악 준비 (볼륨 낮춤)
+        soft_bgm = bgm[5000:5000 + len(tts) + 5000] - 20  # -20dB로 볼륨 낮춤
         
-        # 순차적으로 오디오 연결 (배경음악 -> 간격 -> TTS)
-        combined = bgm + silence_after_bgm + tts
+        # TTS 시작 전 5초
+        combined = initial_bgm
+        
+        # TTS와 낮은 볼륨의 배경음악 오버레이
+        tts_with_bgm = soft_bgm[:len(tts)].overlay(tts)
+        combined = combined + tts_with_bgm
+        
+        # TTS 이후 5초 동안 배경음악 페이드아웃
+        final_bgm = soft_bgm[len(tts):len(tts) + 5000].fade_out(duration=5000)
+        combined = combined + final_bgm
         
         # CBR MP3로 저장 (192kbps, 44.1kHz)
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
