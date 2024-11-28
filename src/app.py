@@ -46,6 +46,42 @@ def download_bgm(url):
         st.error(f"배경음악 다운로드 중 오류 발생: {str(e)}")
         return None
 
+# def text_to_speech(text, voice_id, speed=1.0):
+#     """TTS API를 호출하여 음성을 생성하는 함수"""
+#     try:
+#         payload = {
+#             "mode": "openfont",
+#             "sentences": [
+#                 {
+#                     "type": "text",
+#                     "text": text,
+#                     "version": "0",
+#                     "voice_id": voice_id,
+#                     "options": {
+#                         "speed": speed
+#                     }
+#                 }
+#             ]
+#         }
+        
+#         logging.info("Sending TTS request")
+#         response = requests.post(
+#             TTS_API_ENDPOINT,
+#             json=payload,
+#             headers={"Content-Type": "application/json"}
+#         )
+        
+#         if response.status_code == 200:
+#             temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+#             temp_file.write(response.content)
+#             temp_file.close()
+#             return temp_file.name
+#         else:
+#             st.error(f"TTS API 오류: {response.status_code} - {response.text}")
+#             return None
+#     except Exception as e:
+#         st.error(f"TTS 변환 중 오류가 발생했습니다: {str(e)}")
+#         return None
 def text_to_speech(text, voice_id, speed=1.0):
     """TTS API를 호출하여 음성을 생성하는 함수"""
     try:
@@ -54,7 +90,20 @@ def text_to_speech(text, voice_id, speed=1.0):
             "sentences": [
                 {
                     "type": "text",
-                    "text": text,
+                    "text": text,  # 작품명
+                    "version": "0",
+                    "voice_id": voice_id,
+                    "options": {
+                        "speed": speed
+                    }
+                },
+                {
+                    "type": "duration",
+                    "time": 1.5  # 1.5초 쉬기
+                },
+                {
+                    "type": "text",
+                    "text": "제작, 나디오",  # 제작사 소개
                     "version": "0",
                     "voice_id": voice_id,
                     "options": {
@@ -167,7 +216,7 @@ def main():
             
             # TTS 생성
             opening_text = f"{title}, 제작, 나디오"
-            tts_path = text_to_speech(opening_text, VOICE_IDS[voice_selection], speed)
+            tts_path = text_to_speech(title, VOICE_IDS[voice_selection], speed)
             
             if bgm_path and tts_path:
                 # 오디오 처리
