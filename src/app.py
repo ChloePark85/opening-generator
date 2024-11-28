@@ -226,6 +226,63 @@ def text_to_speech(text, voice_id, speed=1.0):
 #     except Exception as e:
 #         st.error(f"오디오 처리 중 오류가 발생했습니다: {str(e)}")
 #         return None
+# def process_audio_files(bgm_path, tts_path, swoosh_path):
+#     """배경음악, 효과음, TTS 음성을 결합하는 함수"""
+#     try:
+#         # 오디오 파일 불러오기
+#         bgm = AudioSegment.from_mp3(bgm_path)
+#         tts = AudioSegment.from_wav(tts_path)
+#         swoosh = AudioSegment.from_wav(swoosh_path)
+        
+#         # 시작 5초 동안의 배경음악 (원본 볼륨)
+#         initial_bgm = bgm[:5000]
+        
+#         # 효과음 볼륨 조정 (필요한 경우)
+#         swoosh = swoosh - 5  # 볼륨을 약간 낮춤
+        
+#         # TTS와 함께 깔릴 배경음악 준비 (볼륨 낮춤)
+#         bgm_during_tts = bgm[5000:5000 + len(tts)] - 10
+        
+#         # TTS 이후 배경음악
+#         post_tts_duration = 2500  # 2.5초
+#         fade_duration = 3000      # 3초
+#         bgm_after_tts = bgm[5000 + len(tts):5000 + len(tts) + post_tts_duration] - 10
+#         bgm_fadeout = bgm[5000 + len(tts) + post_tts_duration:5000 + len(tts) + post_tts_duration + fade_duration] - 10
+#         bgm_fadeout = bgm_fadeout.fade_out(duration=fade_duration)
+        
+#         # 순차적으로 오디오 결합
+#         combined = initial_bgm[:-len(swoosh)]  # 효과음 길이만큼 초기 배경음악 조정
+        
+#         # 효과음과 배경음악 오버레이
+#         swoosh_segment = initial_bgm[-len(swoosh):].overlay(swoosh)
+#         combined = combined + swoosh_segment
+        
+#         # TTS와 배경음악 오버레이
+#         tts_with_bgm = bgm_during_tts.overlay(tts)
+#         combined = combined + tts_with_bgm
+        
+#         # TTS 이후 배경음악 추가
+#         combined = combined + bgm_after_tts + bgm_fadeout
+        
+#         # CBR MP3로 저장
+#         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+#         combined.export(
+#             output_path,
+#             format='mp3',
+#             bitrate='192k',
+#             parameters=[
+#                 "-ar", "44100",
+#                 "-ac", "2",
+#                 "-c:a", "libmp3lame",
+#                 "-b:a", "192k",
+#                 "-f", "mp3"
+#             ]
+#         )
+        
+#         return output_path
+#     except Exception as e:
+#         st.error(f"오디오 처리 중 오류가 발생했습니다: {str(e)}")
+#         return None
 def process_audio_files(bgm_path, tts_path, swoosh_path):
     """배경음악, 효과음, TTS 음성을 결합하는 함수"""
     try:
@@ -240,21 +297,25 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         # 효과음 볼륨 조정 (필요한 경우)
         swoosh = swoosh - 5  # 볼륨을 약간 낮춤
         
+        # 효과음이 재생되는 동안의 배경음악 (낮은 볼륨)
+        bgm_during_swoosh = bgm[5000:5000 + len(swoosh)] - 10
+        
         # TTS와 함께 깔릴 배경음악 준비 (볼륨 낮춤)
-        bgm_during_tts = bgm[5000:5000 + len(tts)] - 10
+        bgm_during_tts = bgm[5000 + len(swoosh):5000 + len(swoosh) + len(tts)] - 10
         
         # TTS 이후 배경음악
         post_tts_duration = 2500  # 2.5초
         fade_duration = 3000      # 3초
-        bgm_after_tts = bgm[5000 + len(tts):5000 + len(tts) + post_tts_duration] - 10
-        bgm_fadeout = bgm[5000 + len(tts) + post_tts_duration:5000 + len(tts) + post_tts_duration + fade_duration] - 10
+        total_length = 5000 + len(swoosh) + len(tts)
+        bgm_after_tts = bgm[total_length:total_length + post_tts_duration] - 10
+        bgm_fadeout = bgm[total_length + post_tts_duration:total_length + post_tts_duration + fade_duration] - 10
         bgm_fadeout = bgm_fadeout.fade_out(duration=fade_duration)
         
         # 순차적으로 오디오 결합
-        combined = initial_bgm[:-len(swoosh)]  # 효과음 길이만큼 초기 배경음악 조정
+        combined = initial_bgm  # 시작 5초 (원본 볼륨)
         
         # 효과음과 배경음악 오버레이
-        swoosh_segment = initial_bgm[-len(swoosh):].overlay(swoosh)
+        swoosh_segment = bgm_during_swoosh.overlay(swoosh)
         combined = combined + swoosh_segment
         
         # TTS와 배경음악 오버레이
@@ -283,7 +344,6 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
     except Exception as e:
         st.error(f"오디오 처리 중 오류가 발생했습니다: {str(e)}")
         return None
-
 
 # def main():
 #     st.title("📚 이어가다 오디오북 오프닝 생성기")
