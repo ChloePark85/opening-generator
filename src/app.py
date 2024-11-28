@@ -13,7 +13,6 @@ logging.basicConfig(level=logging.INFO)
 # Streamlit Secrets에서 TTS 설정 가져오기
 try:
     TTS_API_ENDPOINT = st.secrets["TTS_API_ENDPOINT"]
-    TTS_VOICE_ID = st.secrets["TTS_VOICE_ID"]
 except Exception as e:
     st.error("TTS API 설정이 필요합니다. Streamlit Secrets를 확인해주세요.")
     st.stop()
@@ -24,6 +23,11 @@ BGM_URLS = {
     "스릴러": "https://nadio-studio-open-fonts-metadata.s3.ap-northeast-2.amazonaws.com/audio/Alon+Ohana+-+Narrow+View.mp3",
     "동화": "https://nadio-studio-open-fonts-metadata.s3.ap-northeast-2.amazonaws.com/audio/dream.mp3",
     "뉴스": "https://nadio-studio-open-fonts-metadata.s3.ap-northeast-2.amazonaws.com/audio/Ariel+Shalom++-+Eternal+Echoes.mp3"
+}
+
+VOICE_IDS = {
+    "여성 화자": "hg",
+    "남성 화자": "4488664c9dd3ba708e890205004c02e4"
 }
 
 def download_bgm(url):
@@ -42,7 +46,7 @@ def download_bgm(url):
         st.error(f"배경음악 다운로드 중 오류 발생: {str(e)}")
         return None
 
-def text_to_speech(text, speed=1.0):
+def text_to_speech(text, voice_id, speed=1.0):
     """TTS API를 호출하여 음성을 생성하는 함수"""
     try:
         payload = {
@@ -52,7 +56,7 @@ def text_to_speech(text, speed=1.0):
                     "type": "text",
                     "text": text,
                     "version": "0",
-                    "voice_id": TTS_VOICE_ID,
+                    "voice_id": voice_id,
                     "options": {
                         "speed": speed
                     }
@@ -128,23 +132,42 @@ def main():
     
     # 입력 폼
     with st.form("opening_form"):
-        title = st.text_input("작품명을 입력하세요")
+        col1, col2 = st.columns(2)
         
-        bgm_selection = st.selectbox(
-            "배경음악을 선택하세요",
-            list(BGM_URLS.keys())
-        )
+        with col1:
+            title = st.text_input("작품명을 입력하세요")
+            bgm_selection = st.selectbox(
+                "배경음악을 선택하세요",
+                list(BGM_URLS.keys())
+            )
+            
+        with col2:
+            voice_selection = st.selectbox(
+                "화자를 선택하세요",
+                list(VOICE_IDS.keys())
+            )
+            speed = st.slider(
+                "음성 속도",
+                min_value=0.5,
+                max_value=2.0,
+                value=1.0,
+                step=0.1
+            )
         
         submitted = st.form_submit_button("오프닝 생성", use_container_width=True)
     
     if submitted and title:
         with st.spinner('오프닝 생성 중...'):
             # 배경음악 다운로드
-            bgm_path = download_bgm(BGM_URLS[bgm_selection])
+            response = requests.get(BGM_URLS[bgm_selection])
+            if response.status_code == 200:
+                bgm_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+                with open(bgm_path, 'wb') as f:
+                    f.write(response.content)
             
             # TTS 생성
-            opening_text = f"{title}. 제작, 나디오."
-            tts_path = text_to_speech(opening_text)
+            opening_text = f"{title}, 제작, 나디오"
+            tts_path = text_to_speech(opening_text, VOICE_IDS[voice_selection], speed)
             
             if bgm_path and tts_path:
                 # 오디오 처리
