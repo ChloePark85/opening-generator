@@ -295,15 +295,22 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         initial_bgm = bgm[:5000]
         
         # 효과음 볼륨 조정
-        swoosh = swoosh + 3  # 볼륨을 키움
+        swoosh = swoosh + 3
         
         # TTS에 페이드인 적용
         tts = tts.fade_in(50)
         
-        # 효과음이 재생되는 동안의 배경음악 (낮은 볼륨)
-        bgm_during_swoosh = bgm[5000:5000 + len(swoosh)] - 10
+        # 효과음이 재생되는 동안의 배경음악
+        # 마지막 500ms 동안 볼륨 서서히 낮춤
+        bgm_during_swoosh = bgm[5000:5000 + len(swoosh)]
+        bgm_during_swoosh = bgm_during_swoosh.fade(
+            from_gain=0,           # 시작 볼륨 (원본)
+            to_gain=-10,           # 목표 볼륨 (-10dB)
+            start=0,               # 시작 지점
+            duration=len(swoosh)   # 전체 구간에 걸쳐 페이드
+        )
         
-        # TTS와 함께 깔릴 배경음악 준비 (볼륨 낮춤)
+        # TTS와 함께 깔릴 배경음악
         bgm_during_tts = bgm[5000 + len(swoosh):5000 + len(swoosh) + len(tts)] - 10
         
         # TTS 이후 배경음악
@@ -315,7 +322,7 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         bgm_fadeout = bgm_fadeout.fade_out(duration=fade_duration)
         
         # 순차적으로 오디오 결합
-        combined = initial_bgm  # 시작 5초 (원본 볼륨)
+        combined = initial_bgm
         
         # 효과음과 배경음악 오버레이
         swoosh_segment = bgm_during_swoosh.overlay(swoosh)
