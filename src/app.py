@@ -90,7 +90,7 @@ def process_audio_files(bgm_path, tts_path):
         initial_bgm = bgm[:5000]
         
         # TTS 길이 + 5초 만큼의 배경음악 준비 (볼륨 낮춤)
-        soft_bgm = bgm[5000:5000 + len(tts) + 5000] - 20  # -20dB로 볼륨 낮춤
+        soft_bgm = bgm[5000:5000 + len(tts) + 5000] - 10  # -20dB로 볼륨 낮춤
         
         # TTS 시작 전 5초
         combined = initial_bgm
