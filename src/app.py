@@ -294,8 +294,11 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         # 시작 5초 동안의 배경음악 (원본 볼륨)
         initial_bgm = bgm[:5000]
         
-        # 효과음 볼륨 조정 (필요한 경우)
-        swoosh = swoosh - 5  # 볼륨을 약간 낮춤
+        # 효과음 볼륨 조정
+        swoosh = swoosh + 3  # 볼륨을 키움
+        
+        # TTS에 페이드인 적용
+        tts = tts.fade_in(50)
         
         # 효과음이 재생되는 동안의 배경음악 (낮은 볼륨)
         bgm_during_swoosh = bgm[5000:5000 + len(swoosh)] - 10
