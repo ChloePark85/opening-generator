@@ -132,6 +132,49 @@ def text_to_speech(text, voice_id, speed=1.0):
         st.error(f"TTS 변환 중 오류가 발생했습니다: {str(e)}")
         return None
 
+# def process_audio_files(bgm_path, tts_path):
+#     """배경음악과 TTS 음성을 결합하는 함수"""
+#     try:
+#         # 오디오 파일 불러오기
+#         bgm = AudioSegment.from_mp3(bgm_path)
+#         tts = AudioSegment.from_wav(tts_path)
+        
+#         # 시작 5초 동안의 배경음악 (원본 볼륨)
+#         initial_bgm = bgm[:5000]
+        
+#         # TTS 길이 + 5초 만큼의 배경음악 준비 (볼륨 낮춤)
+#         soft_bgm = bgm[5000:5000 + len(tts) + 5000] - 10  # -20dB로 볼륨 낮춤
+        
+#         # TTS 시작 전 5초
+#         combined = initial_bgm
+        
+#         # TTS와 낮은 볼륨의 배경음악 오버레이
+#         tts_with_bgm = soft_bgm[:len(tts)].overlay(tts)
+#         combined = combined + tts_with_bgm
+        
+#         # TTS 이후 5초 동안 배경음악 페이드아웃
+#         final_bgm = soft_bgm[len(tts):len(tts) + 5000].fade_out(duration=5000)
+#         combined = combined + final_bgm
+        
+#         # CBR MP3로 저장 (192kbps, 44.1kHz)
+#         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
+#         combined.export(
+#             output_path,
+#             format='mp3',
+#             bitrate='192k',
+#             parameters=[
+#                 "-ar", "44100",      # 샘플링 레이트 44.1kHz
+#                 "-ac", "2",          # 스테레오
+#                 "-c:a", "libmp3lame", # MP3 인코더
+#                 "-b:a", "192k",      # 고정 비트레이트 192kbps
+#                 "-f", "mp3"          # 출력 포맷
+#             ]
+#         )
+        
+#         return output_path
+#     except Exception as e:
+#         st.error(f"오디오 처리 중 오류가 발생했습니다: {str(e)}")
+#         return None
 def process_audio_files(bgm_path, tts_path):
     """배경음악과 TTS 음성을 결합하는 함수"""
     try:
@@ -142,32 +185,38 @@ def process_audio_files(bgm_path, tts_path):
         # 시작 5초 동안의 배경음악 (원본 볼륨)
         initial_bgm = bgm[:5000]
         
-        # TTS 길이 + 5초 만큼의 배경음악 준비 (볼륨 낮춤)
-        soft_bgm = bgm[5000:5000 + len(tts) + 5000] - 10  # -20dB로 볼륨 낮춤
+        # TTS와 함께 깔릴 배경음악 준비 (볼륨 낮춤)
+        bgm_during_tts = bgm[5000:5000 + len(tts)] - 10  # -10dB
         
-        # TTS 시작 전 5초
-        combined = initial_bgm
+        # TTS 이후 배경음악
+        post_tts_duration = 2500  # 2.5초
+        fade_duration = 3000      # 3초
+        bgm_after_tts = bgm[5000 + len(tts):5000 + len(tts) + post_tts_duration] - 10  # 동일한 볼륨 유지
+        bgm_fadeout = bgm[5000 + len(tts) + post_tts_duration:5000 + len(tts) + post_tts_duration + fade_duration] - 10
+        bgm_fadeout = bgm_fadeout.fade_out(duration=fade_duration)
         
-        # TTS와 낮은 볼륨의 배경음악 오버레이
-        tts_with_bgm = soft_bgm[:len(tts)].overlay(tts)
+        # 순차적으로 오디오 결합
+        combined = initial_bgm  # 시작 5초 (원본 볼륨)
+        
+        # TTS와 배경음악 오버레이
+        tts_with_bgm = bgm_during_tts.overlay(tts)
         combined = combined + tts_with_bgm
         
-        # TTS 이후 5초 동안 배경음악 페이드아웃
-        final_bgm = soft_bgm[len(tts):len(tts) + 5000].fade_out(duration=5000)
-        combined = combined + final_bgm
+        # TTS 이후 배경음악 추가
+        combined = combined + bgm_after_tts + bgm_fadeout
         
-        # CBR MP3로 저장 (192kbps, 44.1kHz)
+        # CBR MP3로 저장
         output_path = tempfile.NamedTemporaryFile(delete=False, suffix='.mp3').name
         combined.export(
             output_path,
             format='mp3',
             bitrate='192k',
             parameters=[
-                "-ar", "44100",      # 샘플링 레이트 44.1kHz
-                "-ac", "2",          # 스테레오
-                "-c:a", "libmp3lame", # MP3 인코더
-                "-b:a", "192k",      # 고정 비트레이트 192kbps
-                "-f", "mp3"          # 출력 포맷
+                "-ar", "44100",
+                "-ac", "2",
+                "-c:a", "libmp3lame",
+                "-b:a", "192k",
+                "-f", "mp3"
             ]
         )
         
