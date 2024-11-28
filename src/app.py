@@ -291,8 +291,9 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         tts = AudioSegment.from_wav(tts_path)
         swoosh = AudioSegment.from_wav(swoosh_path)
         
-        # 시작 5초 동안의 배경음악 (원본 볼륨)
-        initial_bgm = bgm[:5000]
+        # 시작 6초 동안의 배경음악 (원본 볼륨)
+        initial_duration = 6000  # 6초로 변경
+        initial_bgm = bgm[:initial_duration]
         
         # 효과음 볼륨 조정
         swoosh = swoosh + 3
@@ -301,22 +302,21 @@ def process_audio_files(bgm_path, tts_path, swoosh_path):
         tts = tts.fade_in(50)
         
         # 효과음이 재생되는 동안의 배경음악
-        # 마지막 500ms 동안 볼륨 서서히 낮춤
-        bgm_during_swoosh = bgm[5000:5000 + len(swoosh)]
+        bgm_during_swoosh = bgm[initial_duration:initial_duration + len(swoosh)]
         bgm_during_swoosh = bgm_during_swoosh.fade(
-            from_gain=0,           # 시작 볼륨 (원본)
-            to_gain=-10,           # 목표 볼륨 (-10dB)
-            start=0,               # 시작 지점
-            duration=len(swoosh)   # 전체 구간에 걸쳐 페이드
+            from_gain=0,
+            to_gain=-10,
+            start=0,
+            duration=len(swoosh)
         )
         
         # TTS와 함께 깔릴 배경음악
-        bgm_during_tts = bgm[5000 + len(swoosh):5000 + len(swoosh) + len(tts)] - 10
+        bgm_during_tts = bgm[initial_duration + len(swoosh):initial_duration + len(swoosh) + len(tts)] - 10
         
         # TTS 이후 배경음악
         post_tts_duration = 2500  # 2.5초
         fade_duration = 3000      # 3초
-        total_length = 5000 + len(swoosh) + len(tts)
+        total_length = initial_duration + len(swoosh) + len(tts)
         bgm_after_tts = bgm[total_length:total_length + post_tts_duration] - 10
         bgm_fadeout = bgm[total_length + post_tts_duration:total_length + post_tts_duration + fade_duration] - 10
         bgm_fadeout = bgm_fadeout.fade_out(duration=fade_duration)
