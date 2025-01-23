@@ -12,7 +12,7 @@ pydub
 ffmpeg-python
 
 # TTS
-elevenlabs==0.2.26
+elevenlabs
 
 # Streamlit
 streamlit>=1.30.0
