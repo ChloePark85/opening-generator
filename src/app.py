@@ -30,7 +30,7 @@ BGM_URLS = {
 }
 
 VOICE_IDS = {
-    "여성 화자": "kLtVxhs5O2bJqOBpeTV6",  # Elevenlabs 여성 보이스 ID
+    "여성 화자": "xtPpJW6BY4c8ATbuVBO1",  # Elevenlabs 여성 보이스 ID
     "남성 화자": "3MMlKavlOQfPfUwRwYNI"    # Elevenlabs 남성 보이스 ID
 }
 
@@ -62,7 +62,7 @@ def text_to_speech(text, voice_id, speed=1.0):
         
         # 제목 끝에 마침표 추가하고, 영어/한글 구분하여 제작사 소개 텍스트 구성
         title_with_period = f"{text}..." if not text.endswith('.') else text
-        outro = "    produced by nadio." if is_english(text) else "    제작, 나디오"
+        outro = "    produced by nadio." if is_english(text) else "    제작. 나디오."
         full_text = f"{title_with_period}\n\n{outro}"
         
         # 음성 생성
